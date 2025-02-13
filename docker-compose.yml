@@ -1,0 +1,42 @@
+services:
+  mysql-db:
+    image: mysql:9.1.0
+    container_name: mysql-cliente
+    environment:
+      MYSQL_ROOT_PASSWORD: "devpass" 
+      MYSQL_DATABASE: db_clientes 
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./scripts:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-psecret"]
+      interval: 4s
+      timeout: 10s
+      retries: 4
+    networks:
+      - app-network
+
+  clientes:
+    image: clientes:latest
+    container_name: clientes-app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8080"
+    environment:
+      - DB_HOST=mysql-cliente
+      - DB_PORT=3306
+      - DB_NAME=db_clientes
+      - DB_USER=root
+      - DB_PASSWORD=devpass
+    depends_on:
+      mysql-db:
+        condition: service_healthy
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
